@@ -1,80 +1,39 @@
-import gymnasium as gym
-from gymnasium.wrappers import GrayscaleObservation, ResizeObservation
-from stable_baselines3 import PPO
-from stable_baselines3.common.env_util import make_vec_env
-
-from framestackwrapper import CustomFrameStack
-
-def make_env(render_mode=None):
-    """
-    Create a wrapped CarRacing environment.
-
-    Args:
-        render_mode: "human" for visualization, None for training.
-    Returns:
-        Wrapped Gymnasium environment.
-    """
-    env = gym.make("CarRacing-v3", render_mode=render_mode)
-
-    env = ResizeObservation(env, (64, 64))          
-    env = GrayscaleObservation(env, keep_dim=True)
-    env = CustomFrameStack(env, num_stack=4)                      
-
-    return env
-
-def train_agent(total_timesteps=200_000, n_envs=4, log_dir="./logs_car_racing/"):
-    """
-    Train a PPO agent on CarRacing-v3.
-    """
-    print("Initializing training environment...")
-    env = make_vec_env(make_env, n_envs=n_envs)
-
-    print("Setting up PPO model...")
-    model = PPO(
-        policy="CnnPolicy",
-        env=env,
-        verbose=1,
-        tensorboard_log=log_dir,
-    )
-
-    print(f"Starting training for {total_timesteps:,} timesteps...")
-    model.learn(total_timesteps=total_timesteps)
-    print("Training finished!")
-
-    model.save("ppo_car_racing")
-    print("Model saved as ppo_car_racing.zip")
-
-    env.close()
-    return model
-
-def evaluate_agent(model_path="ppo_car_racing", episodes=1):
-    """
-    Run a trained PPO agent in human-rendered mode.
-    """
-    print(f"Evaluating model from: {model_path}.zip")
-    env = make_env(render_mode="human")
-
-    model = PPO.load(model_path)
-
-    for ep in range(episodes):
-        obs, info = env.reset()
-        done = False
-        total_reward = 0
-
-        while not done:
-            action, _ = model.predict(obs, deterministic=True)
-            obs, reward, terminated, truncated, info = env.step(action)
-            total_reward += reward
-            done = terminated or truncated
-
-        print(f"Episode {ep+1} reward: {total_reward:.2f}")
-
-    env.close()
+# main.py
+import argparse
+from train_ppo import train_ppo, evaluate_ppo
+from train_dqn import train_dqn, evaluate_dqn
+from optuna_tune import run_optuna
+from visualize import watch_agent
 
 if __name__ == "__main__":
-    model = train_agent(
-        total_timesteps=100_000,  
-        n_envs=4,
-    )
+    parser = argparse.ArgumentParser(description="CarRacing RL Project")
+    parser.add_argument("mode", choices=["train-ppo", "train-dqn", "evaluate-ppo", "evaluate-dqn","watch-ppo", "watch-dqn"], help="What to run")
+    parser.add_argument("--timesteps", type=int, default=200_000, help="Training timesteps")
+    parser.add_argument("--episodes", type=int, default=5, help="Evaluation episodes")
 
-    evaluate_agent("ppo_car_racing", episodes=2)
+    # Optuna hyperparameter tuning arguments
+    parser.add_argument("--optuna", choices=["ppo", "dqn"], help="Run Optuna hyperparameter search")
+    parser.add_argument("--trials", type=int, default=10, help="Number of Optuna trials")
+    parser.add_argument("--optuna_timesteps", type=int, default=50_000, help="Timesteps per trial for Optuna")
+
+
+    args = parser.parse_args()
+    # Run Optuna if requested
+    if args.optuna:
+        run_optuna(method=args.optuna, n_trials=args.trials, timesteps=args.optuna_timesteps)
+        exit(0)  # stoppar programmet efter Optuna-sökning
+
+
+    if args.mode == "train-ppo":
+        train_ppo(total_timesteps=args.timesteps)
+    elif args.mode == "evaluate-ppo":
+        evaluate_ppo(episodes=args.episodes)
+    elif args.mode == "train-dqn":
+        train_dqn(total_timesteps=args.timesteps)
+    elif args.mode == "evaluate-dqn":
+        evaluate_dqn(episodes=args.episodes)
+    elif args.mode == "watch-ppo":
+        watch_agent(args.model_path, method="ppo", episodes=args.episodes)
+    elif args.mode == "watch-dqn":
+        watch_agent(args.model_path, method="dqn", episodes=args.episodes)
+
