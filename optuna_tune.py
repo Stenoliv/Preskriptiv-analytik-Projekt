@@ -1,4 +1,3 @@
-# optuna_tune.py
 import optuna
 import json
 from stable_baselines3 import PPO, DQN
@@ -81,5 +80,5 @@ def run_optuna(method="ppo", n_trials=10, timesteps=50_000, save_json="models/op
     best_params = study.best_params
     with open(save_json, "w") as f:
         json.dump(best_params, f, indent=2)
-    print(f"✅ Best hyperparameters for {method} saved to {save_json}")
+    print(f"Best hyperparameters for {method} saved to {save_json}")
     return best_params

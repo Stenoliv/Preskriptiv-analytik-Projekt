@@ -1,4 +1,3 @@
-# visualize.py
 from stable_baselines3 import PPO, DQN
 from env_utils import make_car_racing_env
 
