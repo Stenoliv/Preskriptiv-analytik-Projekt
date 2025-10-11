@@ -26,7 +26,7 @@ def main():
     parser.add_argument("--optuna_best", type=str, default=None, help="Path to Optuna JSON file for hyperparameters")
 
     # Optuna-sökning
-    parser.add_argument("--optuna", choices=["ppo", "dqn"], help="Run Optuna hyperparameter search")
+    parser.add_argument("--optuna", choices=["ppo", "dqn", "export-only"], help="Run Optuna hyperparameter search")
     parser.add_argument("--trials", type=int, default=10, help="Number of Optuna trials")
     parser.add_argument("--optuna_timesteps", type=int, default=50_000, help="Timesteps per trial for Optuna")
 

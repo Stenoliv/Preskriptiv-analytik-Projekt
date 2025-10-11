@@ -1,3 +1,4 @@
+import os
 import optuna
 import json
 import torch
@@ -101,18 +102,40 @@ def run_optuna(method="ppo", n_trials=10, timesteps=50_000, envs=1, save_json="m
 
     print(f"Running Optuna for {method.upper()} with {n_trials} trials × {timesteps:,} timesteps")
 
-    study = optuna.create_study(direction="maximize", study_name=study_name, storage=storage, load_if_exists=True)
+    # 🧠 Export-only mode
+    if method.lower() == "export-only":
+        print("📤 Exporting best parameters from existing PPO study...")
+        study = optuna.load_study(study_name="ppo_car_racing", storage="sqlite:///optuna_ppo.db")
+        best_params = study.best_params
+
+        os.makedirs(os.path.dirname(save_json), exist_ok=True)
+
+        with open(save_json, "w") as f:
+            json.dump(best_params, f, indent=2)
+        print(f"💾 Exported best parameters to {save_json}")
+        return best_params
+
+    # 🧩 Normal optimization mode
+    print(f"🚀 Running Optuna for {method.upper()} with {n_trials} trials × {timesteps:,} timesteps")
+    study = optuna.create_study(
+        direction="maximize", 
+        study_name=study_name, 
+        storage=storage, 
+        load_if_exists=True
+    )
 
     if method.lower() == "ppo":
         study.optimize(lambda trial: optuna_objective_ppo(trial, timesteps, n_envs=envs), n_trials=n_trials)
     elif method.lower() == "dqn":
         study.optimize(lambda trial: optuna_objective_dqn(trial, timesteps, n_envs=envs), n_trials=n_trials)
     else:
-        raise ValueError("Method must be 'ppo' or 'dqn'")
+        raise ValueError("Method must be 'ppo', 'dqn', or 'export-only'")
 
     best_params = study.best_params
     print(f"\n✅ Best hyperparameters for {method.upper()}:")
     print(json.dumps(best_params, indent=2))
+
+    os.makedirs(os.path.dirname(save_json), exist_ok=True)
 
     with open(save_json, "w") as f:
         json.dump(best_params, f, indent=2)
