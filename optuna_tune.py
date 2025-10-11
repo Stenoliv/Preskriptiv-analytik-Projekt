@@ -14,7 +14,7 @@ def make_eval_env():
 
 def optuna_objective_ppo(trial, timesteps=50_000, n_envs=1):
     """Optuna objective for PPO"""
-    env = SubprocVecEnv([lambda: make_car_racing_env(render_mode=None) for _ in range(n_envs)])
+    env = SubprocVecEnv([lambda: make_eval_env() for _ in range(n_envs)])
     env = VecTransposeImage(env)
 
     # --- Hyperparameter search space ---
@@ -22,7 +22,7 @@ def optuna_objective_ppo(trial, timesteps=50_000, n_envs=1):
     gamma = trial.suggest_float("gamma", 0.95, 0.9999)
     n_steps = trial.suggest_int("n_steps", 64, 2048, log=True)
     n_steps = max(64, int(n_steps // n_envs) * n_envs) # balance across envs
-    batch_size = trial.suggest_categorical("batch_size", [32, 64, 128])
+    batch_size = trial.suggest_categorical("batch_size", [32, 64, 128, 256])
     ent_coef = trial.suggest_float("ent_coef", 0.0, 0.05)
     clip_range = trial.suggest_float("clip_range", 0.1, 0.3)
 
@@ -41,8 +41,8 @@ def optuna_objective_ppo(trial, timesteps=50_000, n_envs=1):
         device=device
     )
 
+    eval_env = SubprocVecEnv([lambda: make_eval_env() for _ in range(n_envs)])
     try:
-        eval_env = SubprocVecEnv([lambda: make_eval_env() for _ in range(n_envs)])
         model.learn(total_timesteps=timesteps)
         mean_reward, _ = evaluate_policy(model, eval_env, n_eval_episodes=3)
     except Exception as e:
@@ -50,8 +50,7 @@ def optuna_objective_ppo(trial, timesteps=50_000, n_envs=1):
         mean_reward = -9999  # penalize failed runs
     finally:
         env.close()
-        if "eval_env" in locals():
-            eval_env.close()
+        eval_env.close()
         
     return mean_reward
 
@@ -105,9 +104,9 @@ def run_optuna(method="ppo", n_trials=10, timesteps=50_000, envs=1, save_json="m
     study = optuna.create_study(direction="maximize", study_name=study_name, storage=storage, load_if_exists=True)
 
     if method.lower() == "ppo":
-        study.optimize(lambda trial: optuna_objective_ppo(trial, timesteps, n_envs=envs), n_trials=n_trials, n_jobs=envs)
+        study.optimize(lambda trial: optuna_objective_ppo(trial, timesteps, n_envs=envs), n_trials=n_trials)
     elif method.lower() == "dqn":
-        study.optimize(lambda trial: optuna_objective_dqn(trial, timesteps, n_envs=envs), n_trials=n_trials, n_jobs=envs)
+        study.optimize(lambda trial: optuna_objective_dqn(trial, timesteps, n_envs=envs), n_trials=n_trials)
     else:
         raise ValueError("Method must be 'ppo' or 'dqn'")
 
