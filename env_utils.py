@@ -1,7 +1,7 @@
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
-from gymnasium.wrappers import GrayScaleObservation, ResizeObservation
+from gymnasium.wrappers import GrayscaleObservation, ResizeObservation
 
 class DiscretizedCarRacing(gym.Wrapper):
     """
@@ -25,14 +25,14 @@ class DiscretizedCarRacing(gym.Wrapper):
 
 def make_car_racing_env(discretized=False, grayscale=True, resize_shape=(64, 64), render_mode=None):
     """
-    Skapar och returnerar en CarRacing-v2 miljö.
+    Skapar och returnerar en CarRacing-v3 miljö.
     """
-    env = gym.make("CarRacing-v2", render_mode=render_mode)
+    env = gym.make("CarRacing-v3", render_mode=render_mode)
 
-    if grayscale:
-        env = GrayScaleObservation(env, keep_dim=True)
     if resize_shape:
         env = ResizeObservation(env, resize_shape)
+    if grayscale:
+        env = GrayscaleObservation(env, keep_dim=True)
     if discretized:
         env = DiscretizedCarRacing(env)
 

@@ -1,3 +1,4 @@
+import os
 import argparse
 from train_ppo import train_ppo, evaluate_ppo
 from train_dqn import train_dqn, evaluate_dqn
@@ -10,6 +11,7 @@ def main():
     parser.add_argument(
         "mode",
         choices=[
+            "optuna-ppo", "optuna-dqn",
             "train-ppo", "evaluate-ppo", "watch-ppo",
             "train-dqn", "evaluate-dqn", "watch-dqn"
         ],
@@ -17,6 +19,7 @@ def main():
     )
 
     # Generella argument
+    parser.add_argument("--envs", type=int, default=4, help="Training environments (for PPO)")
     parser.add_argument("--timesteps", type=int, default=200_000, help="Training timesteps")
     parser.add_argument("--episodes", type=int, default=5, help="Evaluation/Watch episodes")
     parser.add_argument("--model_path", type=str, default=None, help="Path to saved model")
@@ -30,7 +33,7 @@ def main():
     args = parser.parse_args()
 
     if args.optuna:
-        run_optuna(method=args.optuna, n_trials=args.trials, timesteps=args.optuna_timesteps)
+        run_optuna(method=args.optuna, n_trials=args.trials, envs=args.envs, timesteps=args.optuna_timesteps)
         return  # avsluta efter Optuna
 
     if not args.model_path:
@@ -39,8 +42,19 @@ def main():
         elif args.mode.startswith("dqn"):
             args.model_path = "models/dqn_car_racing.zip"
 
+    # Ensure model exists for evaluation/watch modes
+    if args.mode.startswith(("evaluate", "watch")) and not os.path.exists(args.model_path):
+        raise FileNotFoundError(
+            f"Model file not found at {args.model_path}. Please train the model first."
+        )
+
     if args.mode == "train-ppo":
-        train_ppo(total_timesteps=args.timesteps, optuna_params_path=args.optuna_best)
+        train_ppo(
+            total_timesteps=args.timesteps,
+            n_envs=args.envs,
+            optuna_params_path=args.optuna_best,
+            model_path=args.model_path
+        )
 
     elif args.mode == "evaluate-ppo":
         evaluate_ppo(model_path=args.model_path, episodes=args.episodes, render=True)

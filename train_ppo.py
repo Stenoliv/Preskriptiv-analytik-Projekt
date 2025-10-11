@@ -1,7 +1,8 @@
 import os
 import json
+import torch
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv, VecTransposeImage
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecTransposeImage
 from stable_baselines3.common.evaluation import evaluate_policy
 from env_utils import make_car_racing_env
 
@@ -18,7 +19,7 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
         optuna_params_path (str): Valfri JSON-fil med Optuna-hyperparametrar.
     """
     print("Initializing PPO training environment...")
-    env = DummyVecEnv([lambda: make_car_racing_env(render_mode=None) for _ in range(n_envs)])
+    env = SubprocVecEnv([lambda: make_car_racing_env(render_mode=None) for _ in range(n_envs)])
     env = VecTransposeImage(env)
 
     if optuna_params_path and os.path.exists(optuna_params_path):
@@ -27,6 +28,8 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
         print("Using Optuna hyperparameters:", params)
     else:
         params = {}
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     print("Setting up PPO model...")
     model = PPO(
@@ -39,10 +42,11 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
         n_steps=params.get("n_steps", 2048),
         batch_size=params.get("batch_size", 64),
         ent_coef=params.get("ent_coef", 0.0),
-        clip_range=params.get("clip_range", 0.2)
+        clip_range=params.get("clip_range", 0.2),
+        device=device
     )
 
-    print(f"Training PPO for {total_timesteps:,} timesteps...")
+    print(f"Training PPO with {n_envs} parallel environments for {total_timesteps:,} timesteps...")
     model.learn(total_timesteps=total_timesteps)
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     model.save(model_path)
