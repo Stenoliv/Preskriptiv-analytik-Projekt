@@ -1,5 +1,6 @@
 absl-py==2.3.1
 alembic==1.16.5
+Box2D==2.3.10
 box2d-py==2.3.5
 cloudpickle==3.1.1
 colorama==0.4.6
@@ -42,10 +43,12 @@ six==1.17.0
 SQLAlchemy==2.0.43
 stable_baselines3==2.7.0
 swig==4.3.1.post0
-sympy==1.14.0
+sympy==1.13.1
 tensorboard==2.20.0
 tensorboard-data-server==0.7.2
-torch==2.8.0
+torch==2.5.1+cu121
+torchaudio==2.5.1+cu121
+torchvision==0.20.1+cu121
 tqdm==4.67.1
 typing_extensions==4.15.0
 tzdata==2025.2
