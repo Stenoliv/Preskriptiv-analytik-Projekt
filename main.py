@@ -5,6 +5,11 @@ from train_dqn import train_dqn, evaluate_dqn
 from visualize import watch_agent
 from optuna_tune import run_optuna
 
+def parse_resize_shape(s):
+    # Convert string "(94,94)" or "94,94" into a tuple of ints
+    s = s.replace("(", "").replace(")", "")
+    return tuple(map(int, s.split(",")))
+
 def main():
     parser = argparse.ArgumentParser(description="CarRacing RL Project")
 
@@ -19,7 +24,8 @@ def main():
     )
 
     # Generella argument
-    parser.add_argument("--envs", type=int, default=4, help="Training environments (for PPO)")
+    parser.add_argument("--envs", type=int, default=4, help="Training environments")
+    parser.add_argument("--resize_shape", type=parse_resize_shape, default=(64, 64))
     parser.add_argument("--timesteps", type=int, default=200_000, help="Training timesteps")
     parser.add_argument("--episodes", type=int, default=5, help="Evaluation/Watch episodes")
     parser.add_argument("--model_path", type=str, default=None, help="Path to saved model")
@@ -37,9 +43,10 @@ def main():
         return  # avsluta efter Optuna
 
     if not args.model_path:
-        if args.mode.startswith("ppo"):
+        os.makedirs("models", exist_ok=True)
+        if "ppo" in args.mode:
             args.model_path = "models/ppo_car_racing.zip"
-        elif args.mode.startswith("dqn"):
+        elif "dqn" in args.mode:
             args.model_path = "models/dqn_car_racing.zip"
 
     # Ensure model exists for evaluation/watch modes
@@ -53,7 +60,8 @@ def main():
             total_timesteps=args.timesteps,
             n_envs=args.envs,
             optuna_params_path=args.optuna_best,
-            model_path=args.model_path
+            model_path=args.model_path,
+            resize_shape=args.resize_shape
         )
 
     elif args.mode == "evaluate-ppo":

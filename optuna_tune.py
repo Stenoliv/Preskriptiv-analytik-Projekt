@@ -2,32 +2,38 @@ import os
 import optuna
 import json
 import torch
+import numpy as np
 from stable_baselines3 import PPO, DQN
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecTransposeImage
-from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.evaluation import evaluate_policy
-from env_utils import make_car_racing_env
+from env_utils import make_car_env
 
-def make_eval_env():
-    """Return a monitored evaluation environment."""
-    env = make_car_racing_env(render_mode=None)
-    return Monitor(env)
-
-def optuna_objective_ppo(trial, timesteps=50_000, n_envs=1):
+def optuna_objective_ppo(trial, timesteps=50_000, envs=4):
     """Optuna objective for PPO"""
-    env = SubprocVecEnv([lambda: make_eval_env() for _ in range(n_envs)])
-    env = VecTransposeImage(env)
-
+    import time
+    from stable_baselines3.common.monitor import Monitor
+    import numpy as np
+    
+    mean_reward = -9999.0  # ✅ default value
+    start_time = time.time()
+    trial_number = trial.number
+    print(f"\n🧠 Starting PPO trial #{trial_number}")
+    print("-" * 60)
+    
     # --- Hyperparameter search space ---
-    learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-3, log=True)
+    learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-3)
     gamma = trial.suggest_float("gamma", 0.95, 0.9999)
-    n_steps = trial.suggest_int("n_steps", 64, 2048, log=True)
-    n_steps = max(64, int(n_steps // n_envs) * n_envs) # balance across envs
-    batch_size = trial.suggest_categorical("batch_size", [32, 64, 128, 256])
+    gae_lambda = trial.suggest_float("gae_lambda", 0.8, 1.0)
     ent_coef = trial.suggest_float("ent_coef", 0.0, 0.05)
-    clip_range = trial.suggest_float("clip_range", 0.1, 0.3)
+    clip_range = trial.suggest_float("clip_range", 0.1, 0.4)
+    n_steps = trial.suggest_categorical("n_steps", [256, 512, 1024, 2048])
+    batch_size = trial.suggest_categorical("batch_size", [32, 64, 128, 256])
+
+    print(f"🧩 Params: lr={learning_rate:.1e}, gamma={gamma}, n_steps={n_steps}, batch_size={batch_size}")
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    env = make_car_env(render_mode=None, num_envs=envs, discretized=False, grayscale=True, resize_shape=(48, 48))
+    eval_env = make_car_env(render_mode=None, num_envs=1, discretized=False, grayscale=True, resize_shape=(48, 48))
     
     model = PPO(
         "CnnPolicy",
@@ -35,30 +41,52 @@ def optuna_objective_ppo(trial, timesteps=50_000, n_envs=1):
         verbose=0,
         learning_rate=learning_rate,
         gamma=gamma,
+        gae_lambda=gae_lambda,
         n_steps=n_steps,
         batch_size=batch_size,
         ent_coef=ent_coef,
         clip_range=clip_range,
         device=device
     )
+    
+    # Split the training into chunks so we can report progress
+    steps_done = 0
+    report_every = max(10_000, timesteps // 10)
 
-    eval_env = SubprocVecEnv([lambda: make_eval_env() for _ in range(n_envs)])
     try:
-        model.learn(total_timesteps=timesteps)
-        mean_reward, _ = evaluate_policy(model, eval_env, n_eval_episodes=3)
+        while steps_done < timesteps:
+            model.learn(total_timesteps=report_every, reset_num_timesteps=False)
+            steps_done += report_every
+            
+            # Evaluate current model
+            mean_reward, _ = evaluate_policy(model, eval_env, n_eval_episodes=2)
+            if isinstance(mean_reward, (list, tuple)):
+                mean_reward = float(np.mean(mean_reward))
+            
+            print(f"🪶 Trial #{trial_number} @ {steps_done:,} steps — mean_reward={mean_reward:.2f}")
+            
+            # Report intermediate objective value
+            trial.report(mean_reward, steps_done)
+            
+            # Check if this trial should be pruned
+            if trial.should_prune():
+                print(f"⛔ Pruned trial #{trial_number} at {steps_done:,} steps")
+                raise optuna.TrialPruned()
     except Exception as e:
         print(f"[Trial failed] {e}")
-        mean_reward = -9999  # penalize failed runs
+        mean_reward = -9999
     finally:
         env.close()
         eval_env.close()
         
+    print(f"✅ Trial #{trial_number} completed in {time.time() - start_time:.1f}s with reward {mean_reward:.2f}")
+    print("=" * 60)
+    
     return mean_reward
 
-
-def optuna_objective_dqn(trial, timesteps=50_000, n_envs=1):
+def optuna_objective_dqn(trial, timesteps=50_000, envs=1):
     """Optuna objective for DQN"""
-    env = SubprocVecEnv([lambda: make_car_racing_env(discretized=True, render_mode=None) for _ in range(n_envs)])
+    env = make_car_env(render_mode=None, num_envs=envs, discretized=False, grayscale=True)
 
     learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-3, log=True)
     gamma = trial.suggest_float("gamma", 0.95, 0.999)
@@ -121,13 +149,14 @@ def run_optuna(method="ppo", n_trials=10, timesteps=50_000, envs=1, save_json="m
         direction="maximize", 
         study_name=study_name, 
         storage=storage, 
-        load_if_exists=True
+        load_if_exists=True,
+        pruner=optuna.pruners.MedianPruner(n_startup_trials=3, n_warmup_steps=2),
     )
 
     if method.lower() == "ppo":
-        study.optimize(lambda trial: optuna_objective_ppo(trial, timesteps, n_envs=envs), n_trials=n_trials)
+        study.optimize(lambda trial: optuna_objective_ppo(trial, timesteps, envs), n_jobs=max(1, int(envs / 4)), n_trials=n_trials)
     elif method.lower() == "dqn":
-        study.optimize(lambda trial: optuna_objective_dqn(trial, timesteps, n_envs=envs), n_trials=n_trials)
+        study.optimize(lambda trial: optuna_objective_dqn(trial, timesteps, envs), n_jobs=max(1, int(envs / 4)), n_trials=n_trials)
     else:
         raise ValueError("Method must be 'ppo', 'dqn', or 'export-only'")
 

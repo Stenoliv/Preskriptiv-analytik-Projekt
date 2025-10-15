@@ -1,14 +1,13 @@
 import os
 import json
 from stable_baselines3 import DQN
-from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.evaluation import evaluate_policy
-from env_utils import make_car_racing_env
+from env_utils import make_car_env
 
 def train_dqn(total_timesteps=300_000, log_dir="logs/dqn",
-              model_path="models/dqn_car_racing.zip", optuna_params_path=None):
+              model_path="models/dqn_car_racing.zip", optuna_params_path=None, n_envs=4):
     """
-    Tränar en DQN-agent på diskretiserad CarRacing-v2.
+    Tränar en DQN-agent på diskretiserad CarRacing-v3.
 
     Args:
         total_timesteps (int): Antal träningssteg.
@@ -17,7 +16,7 @@ def train_dqn(total_timesteps=300_000, log_dir="logs/dqn",
         optuna_params_path (str): Valfri JSON-fil med Optuna-hyperparametrar.
     """
     print("Initializing DQN training environment...")
-    env = DummyVecEnv([lambda: make_car_racing_env(discretized=True, render_mode=None)])
+    env = make_car_env(num_envs=n_envs, discretized=True, render_mode=None, grayscale=True)
 
     # Ladda Optuna-hyperparametrar om fil finns
     if optuna_params_path and os.path.exists(optuna_params_path):
@@ -62,7 +61,7 @@ def evaluate_dqn(model_path="models/dqn_car_racing.zip", episodes=5, render=True
         render (bool): Om True, rendera miljön.
     """
     print(f"Evaluating DQN model ({episodes} episodes)...")
-    env = make_car_racing_env(discretized=True, render_mode="human" if render else None)
+    env = make_car_env(num_envs=1, discretized=True, render_mode="human" if render else None)
     model = DQN.load(model_path)
 
     mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=episodes, render=render)

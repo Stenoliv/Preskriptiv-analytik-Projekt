@@ -1,11 +1,13 @@
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
-from gymnasium.wrappers import GrayscaleObservation, ResizeObservation
+from gymnasium.wrappers import ResizeObservation, GrayscaleObservation
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecTransposeImage
+from stable_baselines3.common.monitor import Monitor    
 
-class DiscretizedCarRacing(gym.Wrapper):
+class DiscretizeActionWrapper(gym.ActionWrapper):
     """
-    Wrapper som gör CarRacing till ett diskret actions-space för DQN.
+    Convert continuous CarRacing actions to discrete actions.
     """
     def __init__(self, env):
         super().__init__(env)
@@ -22,18 +24,27 @@ class DiscretizedCarRacing(gym.Wrapper):
         obs, reward, terminated, truncated, info = self.env.step(self.actions[action])
         return obs, reward, terminated, truncated, info
 
-
-def make_car_racing_env(discretized=False, grayscale=True, resize_shape=(64, 64), render_mode=None):
-    """
-    Skapar och returnerar en CarRacing-v3 miljö.
-    """
-    env = gym.make("CarRacing-v3", render_mode=render_mode)
-
-    if resize_shape:
+def make_car_env(render_mode=None, num_envs=4, discretized=False, resize_shape=(64, 64), grayscale=True):
+    def make_single_env():
+        env = gym.make(
+            "CarRacing-v3",
+            render_mode=render_mode,
+            continuous=not discretized,
+            domain_randomize=False,
+            lap_complete_percent=0.95,
+        )
+        env = Monitor(env)
+        
+        # Optional wrappers
         env = ResizeObservation(env, resize_shape)
-    if grayscale:
-        env = GrayscaleObservation(env, keep_dim=True)
-    if discretized:
-        env = DiscretizedCarRacing(env)
-
+        if grayscale:
+            env = GrayscaleObservation(env, keep_dim=True)
+        if discretized:
+            env = DiscretizeActionWrapper(env)
+        return env
+    
+    env = SubprocVecEnv([lambda: make_single_env() for _ in range(num_envs)])
+    # env = VecNormalize(env, norm_obs=True, norm_reward=True)
+    env = VecTransposeImage(env)
+    
     return env
