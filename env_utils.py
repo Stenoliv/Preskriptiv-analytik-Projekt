@@ -48,3 +48,6 @@ def make_car_env(render_mode=None, num_envs=4, discretized=False, resize_shape=(
     env = VecTransposeImage(env)
     
     return env
+def make_lunarlander_env(render_mode=None):
+    env = gym.make("LunarLander-v3", render_mode=render_mode)
+    return env
