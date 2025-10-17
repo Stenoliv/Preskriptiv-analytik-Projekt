@@ -17,8 +17,7 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
 
     # Select environment
     if env_name == "CarRacing-v3":
-        env = SubprocVecEnv([lambda: make_car_env(render_mode=None, resize_shape=resize_shape) for _ in range(n_envs)])
-        env = VecTransposeImage(env)
+        env = make_car_env(num_envs=16)
         policy = "CnnPolicy"
     else:
         env = DummyVecEnv([lambda: make_lunarlander_env() for _ in range(n_envs)])
@@ -40,13 +39,12 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
         env,
         verbose=1,
         tensorboard_log=log_dir,
-        learning_rate=params.get("learning_rate", 2.5e-4),
         gamma=params.get("gamma", 0.99),
-        n_steps=params.get("n_steps", 2048),
+        n_steps=params.get("n_steps", 1024),
         batch_size=params.get("batch_size", 64),
-        ent_coef=params.get("ent_coef", 0.0),
-        clip_range=params.get("clip_range", 0.2),
-        device=device
+        gae_lambda=(0.95),
+        device=device,
+        n_epochs=(10),
     )
 
     print(f"🏋️ Training PPO on {env_name} for {total_timesteps:,} timesteps...")
