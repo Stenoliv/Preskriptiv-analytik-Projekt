@@ -20,7 +20,7 @@ def watch_agent(model_path, method="ppo", env_name="CarRacing-v3", episodes=3, f
 
     # Select the right environment (render_mode='human' for visualization)
     if env_name == "CarRacing-v3":
-        env = make_car_env(render_mode="human")
+        env = make_car_env(render_mode="human", num_envs=1)
     elif env_name == "LunarLander-v3":
         env = make_lunarlander_env(render_mode="human")
     else:

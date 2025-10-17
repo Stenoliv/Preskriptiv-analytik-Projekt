@@ -1,8 +1,8 @@
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
-from gymnasium.wrappers import ResizeObservation, GrayscaleObservation
-from stable_baselines3.common.vec_env import SubprocVecEnv, VecNormalize, VecTransposeImage
+from gymnasium.wrappers import GrayscaleObservation
+from stable_baselines3.common.vec_env import SubprocVecEnv, VecTransposeImage, VecFrameStack
 from stable_baselines3.common.monitor import Monitor    
 
 class DiscretizeActionWrapper(gym.ActionWrapper):
@@ -24,28 +24,22 @@ class DiscretizeActionWrapper(gym.ActionWrapper):
         obs, reward, terminated, truncated, info = self.env.step(self.actions[action])
         return obs, reward, terminated, truncated, info
 
-def make_car_env(render_mode=None, num_envs=4, discretized=False, resize_shape=(64, 64), grayscale=True):
-    def make_single_env():
+def make_car_env(render_mode=None, discretized=False, num_envs=4):
+    def make_env():
         env = gym.make(
             "CarRacing-v3",
             render_mode=render_mode,
-            continuous=not discretized,
-            domain_randomize=False,
-            lap_complete_percent=0.95,
+            continuous=False,
         )
         env = Monitor(env)
-        
-        # Optional wrappers
-        env = ResizeObservation(env, resize_shape)
-        if grayscale:
-            env = GrayscaleObservation(env, keep_dim=True)
+        env = GrayscaleObservation(env, keep_dim=True)
         if discretized:
             env = DiscretizeActionWrapper(env)
         return env
-    
-    env = SubprocVecEnv([lambda: make_single_env() for _ in range(num_envs)])
-    # env = VecNormalize(env, norm_obs=True, norm_reward=True)
+        
+    env = SubprocVecEnv([lambda: make_env() for _ in range(num_envs)])
     env = VecTransposeImage(env)
+    env = VecFrameStack(env, 4)
     
     return env
 def make_lunarlander_env(render_mode=None):

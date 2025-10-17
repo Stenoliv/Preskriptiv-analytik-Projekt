@@ -67,7 +67,6 @@ def main():
             n_envs=args.envs,
             optuna_params_path=args.optuna_best,
             model_path=args.model_path,
-            resize_shape=args.resize_shape,
             env_name=args.env,
             log_dir=f"logs/ppo/{args.env.lower().replace('-', '_')}"
         )

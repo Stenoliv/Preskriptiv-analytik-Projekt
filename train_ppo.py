@@ -9,7 +9,7 @@ from env_utils import make_car_env, make_lunarlander_env
 
 def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
               model_path="models/ppo_car_racing.zip", optuna_params_path=None,
-              resize_shape=(64, 64), env_name="CarRacing-v3"):
+              env_name="CarRacing-v3"):
     """
     Train a PPO agent on CarRacing-v3 or LunarLander-v3.
     """
@@ -17,7 +17,7 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
 
     # Select environment
     if env_name == "CarRacing-v3":
-        env = make_car_env(num_envs=16)
+        env = make_car_env(render_mode="rgb_array", num_envs=n_envs)
         policy = "CnnPolicy"
     else:
         env = DummyVecEnv([lambda: make_lunarlander_env() for _ in range(n_envs)])
@@ -38,13 +38,13 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
         policy,
         env,
         verbose=1,
-        tensorboard_log=log_dir,
-        gamma=params.get("gamma", 0.99),
         n_steps=params.get("n_steps", 1024),
         batch_size=params.get("batch_size", 64),
+        n_epochs=(10),
+        gamma=params.get("gamma", 0.99),
         gae_lambda=(0.95),
         device=device,
-        n_epochs=(10),
+        tensorboard_log=log_dir,
     )
 
     print(f"🏋️ Training PPO on {env_name} for {total_timesteps:,} timesteps...")
