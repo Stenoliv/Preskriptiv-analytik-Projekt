@@ -2,9 +2,8 @@ import os
 import json
 import torch
 from stable_baselines3 import DQN
-from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.evaluation import evaluate_policy
-from env_utils import make_car_env, make_lunarlander_env
+from env_utils import make_car_env
 
 def train_dqn(total_timesteps=300_000, log_dir="logs/dqn",
               model_path="models/dqn_model.zip", optuna_params_path=None,
@@ -15,15 +14,10 @@ def train_dqn(total_timesteps=300_000, log_dir="logs/dqn",
     print(f"🚀 Initializing DQN training environment for {env_name}...")
 
     # DQN only works with discrete actions
-    if env_name == "CarRacing-v3":
-        env = make_car_env(
-            render_mode="rgb_array",
-            num_envs=num_envs
-        )
-        policy = "CnnPolicy"
-    else:
-        env = make_lunarlander_env(num_envs=num_envs)
-        policy = "MlpPolicy"
+    env = make_car_env(
+        render_mode="rgb_array",
+        num_envs=num_envs
+    )
 
     # Load Optuna parameters if available
     if optuna_params_path and os.path.exists(optuna_params_path):
@@ -37,7 +31,7 @@ def train_dqn(total_timesteps=300_000, log_dir="logs/dqn",
 
     print("🧠 Setting up DQN model...")
     model = DQN(
-        policy,
+        "CnnPolicy",
         env,
         verbose=1,
         tensorboard_log=log_dir,
@@ -70,7 +64,7 @@ def evaluate_dqn(model_path="models/dqn_lunar_lander.zip", episodes=5, render=Tr
     if env_name != "LunarLander-v2":
         raise ValueError("❌ DQN evaluation only supported for LunarLander-v3 (discrete).")
 
-    env = make_lunarlander_env(render_mode="human" if render else None)
+    env = make_car_env(render_mode="human" if render else None)
     model = DQN.load(model_path, device="cuda" if torch.cuda.is_available() else "cpu")
 
     mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=episodes, render=render)

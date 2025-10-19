@@ -25,9 +25,7 @@ def main():
     )
 
     # === General arguments ===
-    parser.add_argument("--env", type=str, default="CarRacing-v3",
-                        choices=["CarRacing-v3", "LunarLander-v3"],
-                        help="Select environment")
+    parser.add_argument("--record", type=bool, default=False, help="Record video of model driving")
     parser.add_argument("--envs", type=int, default=4, help="Number of parallel environments")
     parser.add_argument("--resize_shape", type=parse_resize_shape, default=(64, 64))
     parser.add_argument("--timesteps", type=int, default=200_000, help="Training timesteps")
@@ -80,7 +78,7 @@ def main():
         )
 
     elif args.mode == "watch-ppo":
-        watch_agent(model_path=args.model_path, method="ppo", episodes=args.episodes, env_name=args.env)
+        watch_agent(model_path=args.model_path, method="ppo", episodes=args.episodes, record=args.record)
 
     elif args.mode == "train-dqn":
         train_dqn(
@@ -95,7 +93,7 @@ def main():
         evaluate_dqn(model_path=args.model_path, episodes=args.episodes, render=True, env_name=args.env)
 
     elif args.mode == "watch-dqn":
-        watch_agent(model_path=args.model_path, method="dqn", episodes=args.episodes, env_name=args.env)
+        watch_agent(model_path=args.model_path, method="dqn", episodes=args.episodes, record=args.record)
 
 
 if __name__ == "__main__":

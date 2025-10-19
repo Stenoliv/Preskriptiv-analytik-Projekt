@@ -3,7 +3,7 @@ import json
 import torch
 from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
-from env_utils import make_car_env, make_lunarlander_env
+from env_utils import make_car_env
 
 
 def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
@@ -15,15 +15,10 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
     print(f"🚀 Initializing PPO training environment for {env_name}...")
 
     # Select environment
-    if env_name == "CarRacing-v3":
-        env = make_car_env(
-            render_mode="rgb_array",
-            num_envs=n_envs
-        )
-        policy = "CnnPolicy"
-    else:
-        env = make_lunarlander_env(num_envs=n_envs)
-        policy = "MlpPolicy"
+    env = make_car_env(
+        render_mode="rgb_array",
+        num_envs=n_envs
+    )
 
     # Load Optuna hyperparameters if available
     if optuna_params_path and os.path.exists(optuna_params_path):
@@ -37,7 +32,7 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
 
     print("🧠 Setting up PPO model...")
     model = PPO(
-        policy,
+        "CnnPolicy",
         env,
         verbose=1,
         n_steps=params.get("n_steps", 1024),
@@ -65,12 +60,7 @@ def evaluate_ppo(model_path="models/ppo_car_racing.zip", episodes=5, render=True
     """
     print(f"🎮 Evaluating PPO model on {env_name} ({episodes} episodes)...")
 
-    if env_name == "CarRacing-v3":
-        env = make_car_env(render_mode="human" if render else None)
-        policy = "CnnPolicy"
-    else:
-        env = make_lunarlander_env(render_mode="human" if render else None)
-        policy = "MlpPolicy"
+    env = make_car_env(render_mode="human" if render else None)
 
     model = PPO.load(model_path, device="cuda" if torch.cuda.is_available() else "cpu")
 

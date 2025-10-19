@@ -6,14 +6,22 @@ Vi löste gymnasium car racing v3 miljön med två olika metoder, PPO och DQN.
 Vi byggde ett prrogram som **sökerparametrar me optuna**, tränar modellerna med parametrarna, evaluerar modellen, göra en visualisering av när tränade agenten löser miljön.
 
 ### Processen
-Vi hade till början svårigheter att få agenten att lära sig, den ville bara göra "donitser". Senare kom vi fram till att vi hade gjort några små misstag som orsakade ickoptimalt resultat. Medan Det var ganska snabbt att få allt och köra tog det tid att få resultat som vi blev nöjda med.
+Vi hade till början svårigheter att få agenten att lära sig. Det ända result vi kom fram till med både PPO och DQN var att bilen bara körde full gas ut ur banan o gjorde "donuts" där. 
+Men till slut hittade vi att vi hade `continuous=True` för PPO som vi tror att hade största inverkan på modelens lärande. Men något annat vi ändra var att vi tränade modelen med `render_mode="rgb_array"`
+Vi försökte utnyttja optuna för att hitta bättre parametrar men tiden tog slut i mitten då vi hade svårigheter att få modelen alls att bete sig.
+Men i princip är optuna helt fullt fungerande vi bara hann inte testa oss till några optuna variabler. 
 
 ### Resultat
-**Reulsts go here**
 
 #### Tränings grafer
 
+## DQN
+
+![alt text](image-1.png)
+
 #### Video på agentens körande
+
+
 
 ### Analys av resultat
 Vi kom fram till att PPO gynnade bättre resultat än DQN. Den främsta orsaken till detta är att PPO är en policy-gradient-metod som hanterar kontinuerliga aktionsrum direkt, vilket passar CarRacing-miljön där styrning, gas och broms är kontinuerliga värden. DQN däremot är utformad för diskreta aktionsrum, vilket gör att bilens kontroll blir grov och instabil även med anpassningar.
