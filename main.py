@@ -28,7 +28,7 @@ def main():
     parser.add_argument("--env", type=str, default="CarRacing-v3",
                         choices=["CarRacing-v3", "LunarLander-v3"],
                         help="Select environment")
-    parser.add_argument("--envs", type=int, default=4, help="Number of parallel environments (for PPO)")
+    parser.add_argument("--envs", type=int, default=4, help="Number of parallel environments")
     parser.add_argument("--resize_shape", type=parse_resize_shape, default=(64, 64))
     parser.add_argument("--timesteps", type=int, default=200_000, help="Training timesteps")
     parser.add_argument("--episodes", type=int, default=5, help="Evaluation/Watch episodes")

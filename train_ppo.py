@@ -2,13 +2,12 @@ import os
 import json
 import torch
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv, VecTransposeImage
 from stable_baselines3.common.evaluation import evaluate_policy
 from env_utils import make_car_env, make_lunarlander_env
 
 
 def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
-              model_path="models/ppo_car_racing.zip", optuna_params_path=None,
+              model_path="models/ppo_model.zip", optuna_params_path=None,
               env_name="CarRacing-v3"):
     """
     Train a PPO agent on CarRacing-v3 or LunarLander-v3.
@@ -17,10 +16,13 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
 
     # Select environment
     if env_name == "CarRacing-v3":
-        env = make_car_env(render_mode="rgb_array", num_envs=n_envs)
+        env = make_car_env(
+            render_mode="rgb_array",
+            num_envs=n_envs
+        )
         policy = "CnnPolicy"
     else:
-        env = DummyVecEnv([lambda: make_lunarlander_env() for _ in range(n_envs)])
+        env = make_lunarlander_env(num_envs=n_envs)
         policy = "MlpPolicy"
 
     # Load Optuna hyperparameters if available
