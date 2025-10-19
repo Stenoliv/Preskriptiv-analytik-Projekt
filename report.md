@@ -33,17 +33,11 @@ Men i princip är optuna helt fullt fungerande vi bara hann inte testa oss till 
 
 **PPO agenten kör**
 
-<video width="640" height="360" controls>
-  <source src="videos/ppo_driving.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+[🎬 Se video](videos/ppo_driving.mp4)
 
 **DQN agenten kör**
 
-<video width="640" height="360" controls>
-  <source src="videos/dqn_driving.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+[🎬 Se video](videos/dqn_driving.mp4)
 
 ### Analys av resultat
 
