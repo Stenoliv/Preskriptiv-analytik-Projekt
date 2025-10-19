@@ -11,7 +11,7 @@ def train_dqn(total_timesteps=300_000, log_dir="logs/dqn",
     """
     Train a DQN agent on LunarLander-v3 or CarRacing-v3 (discrete version).
     """
-    print(f"🚀 Initializing DQN training environment for {env_name}...")
+    print(f"Initializing DQN training environment for {env_name}...")
 
     # DQN only works with discrete actions
     env = make_car_env(
@@ -23,13 +23,13 @@ def train_dqn(total_timesteps=300_000, log_dir="logs/dqn",
     if optuna_params_path and os.path.exists(optuna_params_path):
         with open(optuna_params_path, "r") as f:
             params = json.load(f)
-        print("📊 Using Optuna hyperparameters:", params)
+        print("Using Optuna hyperparameters:", params)
     else:
         params = {}
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    print("🧠 Setting up DQN model...")
+    print("Setting up DQN model...")
     model = DQN(
         "CnnPolicy",
         env,
@@ -45,11 +45,11 @@ def train_dqn(total_timesteps=300_000, log_dir="logs/dqn",
         device=device
     )
 
-    print(f"🏋️ Training DQN on {env_name} for {total_timesteps:,} timesteps...")
+    print(f"Training DQN on {env_name} for {total_timesteps:,} timesteps...")
     model.learn(total_timesteps=total_timesteps)
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     model.save(model_path)
-    print(f"✅ DQN model saved at {model_path}")
+    print(f"DQN model saved at {model_path}")
 
     env.close()
     return model
@@ -59,16 +59,16 @@ def evaluate_dqn(model_path="models/dqn_lunar_lander.zip", episodes=5, render=Tr
     """
     Evaluate a trained DQN model.
     """
-    print(f"🎮 Evaluating DQN model on {env_name} ({episodes} episodes)...")
+    print(f"Evaluating DQN model on {env_name} ({episodes} episodes)...")
 
     if env_name != "LunarLander-v2":
-        raise ValueError("❌ DQN evaluation only supported for LunarLander-v3 (discrete).")
+        raise ValueError("DQN evaluation only supported for LunarLander-v3 (discrete).")
 
     env = make_car_env(render_mode="human" if render else None)
     model = DQN.load(model_path, device="cuda" if torch.cuda.is_available() else "cpu")
 
     mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=episodes, render=render)
-    print(f"📈 DQN Mean reward on {env_name}: {mean_reward:.2f} ± {std_reward:.2f}")
+    print(f"DQN Mean reward on {env_name}: {mean_reward:.2f} ± {std_reward:.2f}")
 
     env.close()
     return mean_reward, std_reward

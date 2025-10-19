@@ -12,7 +12,7 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
     """
     Train a PPO agent on CarRacing-v3 or LunarLander-v3.
     """
-    print(f"🚀 Initializing PPO training environment for {env_name}...")
+    print(f"Initializing PPO training environment for {env_name}...")
 
     # Select environment
     env = make_car_env(
@@ -24,13 +24,13 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
     if optuna_params_path and os.path.exists(optuna_params_path):
         with open(optuna_params_path, "r") as f:
             params = json.load(f)
-        print("📊 Using Optuna hyperparameters:", params)
+        print("Using Optuna hyperparameters:", params)
     else:
         params = {}
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    print("🧠 Setting up PPO model...")
+    print("Setting up PPO model...")
     model = PPO(
         "CnnPolicy",
         env,
@@ -48,7 +48,7 @@ def train_ppo(total_timesteps=200_000, n_envs=4, log_dir="logs/ppo",
     model.learn(total_timesteps=total_timesteps)
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     model.save(model_path)
-    print(f"✅ PPO model saved at {model_path}")
+    print(f"PPO model saved at {model_path}")
 
     env.close()
     return model
@@ -58,14 +58,14 @@ def evaluate_ppo(model_path="models/ppo_car_racing.zip", episodes=5, render=True
     """
     Evaluate a trained PPO model.
     """
-    print(f"🎮 Evaluating PPO model on {env_name} ({episodes} episodes)...")
+    print(f"Evaluating PPO model on {env_name} ({episodes} episodes)...")
 
     env = make_car_env(render_mode="human" if render else None)
 
     model = PPO.load(model_path, device="cuda" if torch.cuda.is_available() else "cpu")
 
     mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=episodes, render=render)
-    print(f"📈 PPO Mean reward on {env_name}: {mean_reward:.2f} ± {std_reward:.2f}")
+    print(f"PPO Mean reward on {env_name}: {mean_reward:.2f} ± {std_reward:.2f}")
 
     env.close()
     return mean_reward, std_reward

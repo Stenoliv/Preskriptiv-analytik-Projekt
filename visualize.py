@@ -19,7 +19,7 @@ def watch_agent(model_path, method="ppo", episodes=3, fps=30, record=False, vide
         record (bool): Whether to record gameplay to disk
         video_folder (str): Folder to save videos in (only if record=True)
     """
-    print(f"🎬 Watching {method.upper()} agent for {episodes} episodes...")
+    print(f"Watching {method.upper()} agent for {episodes} episodes...")
 
     render_mode = "rgb_array" if record else "human"
 
@@ -65,9 +65,9 @@ def watch_agent(model_path, method="ppo", episodes=3, fps=30, record=False, vide
             if np.any(done) or np.any(truncated):
                 break
 
-        print(f"🎯 Episode {ep + 1}/{episodes} — Total reward: {total_reward:.2f}")
+        print(f"Episode {ep + 1}/{episodes} — Total reward: {total_reward:.2f}")
 
     env.close()
-    print("✅ Visualization complete.")
+    print("Visualization complete.")
     if record:
-        print(f"📁 Videos saved to: {video_folder}")
+        print(f"Videos saved to: {video_folder}")
