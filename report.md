@@ -63,4 +63,4 @@ Men av tiden som agenten överlevde ser man att PPO var bättre i miljön!
 
 ### Slutstats
 
-PPO överträffade DQN i CarRacing-v3 både i totalbelöning och stabilitet. Resultaten bekräftar att policy-gradientmetoder är mer lämpliga för kontinuerliga kontrollproblem. Framtida arbete kan inkludera jämförelser med andra policy-gradientalgoritmer, t.ex. SAC eller TD3, samt utvärdering på mer komplexa banor.
+PPO lyckades marginalt bättre DQN i CarRacing-v3. Resultaten bekräftar att policy-gradientmetoder är mer lämpliga för kontinuerliga kontrollproblem. Framtida arbete kan inkludera jämförelser med andra policy-gradientalgoritmer, t.ex. SAC eller TD3, samt utvärdering på mer komplexa banor.
