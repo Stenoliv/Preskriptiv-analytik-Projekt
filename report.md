@@ -33,11 +33,11 @@ Men i princip är optuna helt fullt fungerande vi bara hann inte testa oss till 
 
 **PPO agenten kör**
 
-[🎬 Se video](videos/ppo_driving.mp4)
+[![PPO Agent kör](image.png)](videos/ppo_driving.mp4)
 
 **DQN agenten kör**
 
-[🎬 Se video](videos/dqn_driving.mp4)
+[[!DQN Agent kör](image.png)](videos/dqn_driving.mp4)
 
 ### Analys av resultat
 
